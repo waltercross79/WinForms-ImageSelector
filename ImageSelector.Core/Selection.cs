@@ -16,6 +16,57 @@ namespace ImageSelector.Core
         bool IsPointNearComponent(Point point, int width);
     }
 
+    public class Interior : ISelectionComponent
+    {
+        private Point _start;
+        private Point _end;
+
+        public Interior(Point p1, Point p2, Selection parent)
+        {
+            Parent = parent;
+            SelectionComponentType = SelectionComponentType.Inside;
+
+            var first = p1.X < p2.X ? p1 :
+                p1.Y < p2.Y ? p1 : p2;
+            var second = first == p1 ? p2 : p1;
+
+            _start = first;
+            _end = second;
+        }
+
+        public Selection Parent { get; private set; }
+        public SelectionComponentType SelectionComponentType { get; private set; }
+
+        public bool IsPointNearComponent(Point point, int width)
+        {           
+            return point.X >= _start.X + width && point.Y >= _start.Y + width
+                && point.X <= _end.X - width && point.Y <= _end.Y - width;
+        }
+
+        public override string ToString()
+        {
+            return String.Format("Interior[{0}, {1}]", _start.ToString(), _end.ToString());
+        }
+
+        public override int GetHashCode()
+        {
+            return ToString().GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            Interior i = obj as Interior;
+
+            if (i == null)
+                return false;
+
+            return this.GetHashCode() == i.GetHashCode();
+        }
+    }
+
     public class Corner : ISelectionComponent
     {
         private Point _point;
@@ -48,6 +99,29 @@ namespace ImageSelector.Core
 
             return false;
         }
+
+        public override string ToString()
+        {
+            return _point.ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            return ToString().GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            Corner c = obj as Corner;
+
+            if (c == null)
+                return false;
+
+            return this.GetHashCode() == c.GetHashCode();
+        }
     }
 
     public class Edge : ISelectionComponent
@@ -57,8 +131,8 @@ namespace ImageSelector.Core
 
         public Edge(Corner c1, Corner c2)
         {
-            var first = c1.Coordinates.X < c2.Coordinates.X ? c1 :
-                c1.Coordinates.Y < c2.Coordinates.Y ? c1 : c2;
+            var first = c1.Coordinates.X <= c2.Coordinates.X ? c1 :
+                c1.Coordinates.Y <= c2.Coordinates.Y ? c1 : c2;
             var second = first == c1 ? c2 : c1;
 
             _start = first;
@@ -120,6 +194,48 @@ namespace ImageSelector.Core
 
             return false;
         }
+
+        public int Length
+        {
+            get
+            {
+                if (SelectionComponentType == SelectionComponentType.TopEdge ||
+                    SelectionComponentType == SelectionComponentType.BottomEdge)
+                {
+                    return _end.Coordinates.X - _start.Coordinates.X;
+                }
+                else if (SelectionComponentType == SelectionComponentType.LeftEdge ||
+                    SelectionComponentType == SelectionComponentType.RightEdge)
+                {
+                    return _end.Coordinates.Y - _start.Coordinates.Y;
+                }
+                else
+                    return 0;
+            }
+        }
+
+        public override string ToString()
+        {
+            return String.Format("[{0}, {1}]", _start.ToString(), _end.ToString());
+        }
+
+        public override int GetHashCode()
+        {
+            return ToString().GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            Edge c = obj as Edge;
+
+            if (c == null)
+                return false;
+
+            return this.GetHashCode() == c.GetHashCode();
+        }
     }
 
     public class Selection
@@ -128,6 +244,7 @@ namespace ImageSelector.Core
 
         public Selection(Rectangle locationAndSize, int zindex)
         {
+            ID = Guid.NewGuid();
             LocationAndSize = locationAndSize;
             ZIndex = zindex;
 
@@ -135,7 +252,13 @@ namespace ImageSelector.Core
 
             SetCorners(locationAndSize);
             SetEdges();
+            SetInterior();
         }
+
+        /// <summary>
+        /// Unique ID that identifies individual instances of the entity.
+        /// </summary>
+        internal Guid ID { get; private set; }
 
         public int ZIndex { get; set; }
 
@@ -154,6 +277,8 @@ namespace ImageSelector.Core
         public Edge BottomEdge { get; private set; }
 
         public Edge TopEdge { get; private set; }
+
+        public Interior Inside { get; private set; }
 
         public Rectangle LocationAndSize { get; set; }
 
@@ -184,6 +309,13 @@ namespace ImageSelector.Core
             _components.AddRange(new ISelectionComponent[] { LeftEdge, RightEdge, TopEdge, BottomEdge });
         }         
 
+        private void SetInterior()
+        {
+            Inside = new Interior(NWCorner.Coordinates, SECorner.Coordinates, this);
+
+            _components.Add(Inside);
+        }
+
         /// <summary>
         /// Gets a component of the selection at a specified coordinates.
         /// </summary>
@@ -210,5 +342,34 @@ namespace ImageSelector.Core
 
             return null;
         }
+
+        public ISelectionComponent GetSelectionComponentByType(SelectionComponentType componentType)
+        {
+            return this._components.Where(x => x.SelectionComponentType == componentType).Single();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+
+            if (!(obj is Selection toCompare))
+                return false;
+
+            return NWCorner == toCompare.NWCorner &&
+                SECorner == toCompare.SECorner &&
+                ZIndex == toCompare.ZIndex;
+        }
+
+        public override string ToString()
+        {
+            return String.Format("NW: {0}, SE: {1}, ZIndex: {2}", NWCorner, SECorner, ZIndex);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.ToString().GetHashCode();
+        }        
     }
 }

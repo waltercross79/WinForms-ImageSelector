@@ -18,6 +18,7 @@ namespace ImageSelector.Core
         TopEdge = 5,
         LeftEdge = 6,
         BottomEdge = 7,
-        RightEdge = 8
+        RightEdge = 8,
+        Inside = 9
     }
 }

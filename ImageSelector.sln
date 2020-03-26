@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageSelector.Core", "Image
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageSelector.Core.Tests", "ImageSelector.Core.Tests\ImageSelector.Core.Tests.csproj", "{D6B58568-7589-4D12-AFF4-EB9FB8F9403B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageSelector.Tests", "ImageSelector.Tests\ImageSelector.Tests.csproj", "{7F0FE78E-C679-4CFA-9965-A10C91BA673C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D6B58568-7589-4D12-AFF4-EB9FB8F9403B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6B58568-7589-4D12-AFF4-EB9FB8F9403B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6B58568-7589-4D12-AFF4-EB9FB8F9403B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F0FE78E-C679-4CFA-9965-A10C91BA673C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F0FE78E-C679-4CFA-9965-A10C91BA673C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F0FE78E-C679-4CFA-9965-A10C91BA673C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F0FE78E-C679-4CFA-9965-A10C91BA673C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

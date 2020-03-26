@@ -34,6 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -46,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="EventViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -68,6 +70,9 @@
     <Compile Include="Tags.Designer.cs">
       <DependentUpon>Tags.cs</DependentUpon>
     </Compile>
+    <Compile Include="ViewModels\Enums.cs" />
+    <Compile Include="ViewModels\MainFormState.cs" />
+    <Compile Include="ViewModels\MainFormViewModel.cs" />
     <EmbeddedResource Include="EventViewer.resx">
       <DependentUpon>EventViewer.cs</DependentUpon>
     </EmbeddedResource>

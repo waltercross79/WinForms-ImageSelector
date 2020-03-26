@@ -1,5 +1,6 @@
 ﻿using ImageSelector.Core;
 using ImageSelector.Infrastructure;
+using ImageSelector.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,20 +19,20 @@ namespace ImageSelector
     public partial class MainForm : Form
     {
         ImageInfo _image;
-        ImageInfo _seeThrough;
-        bool _drawing = false;
-        Point _actionStart = new Point(0,0);
         int zoomFactor = 0;
         Size originalSize = new Size();
-        List<Selection> _selections;
-        Selection _activeSelection = null;
         Dictionary<SelectionComponentType, Cursor> _cursors;
+        Cursor _activeCursor = Cursors.Default;
+
+        private readonly MainFormViewModel _model;
 
         public MainForm()
         {
             InitializeComponent();
 
-            _selections = new List<Selection>();
+            _model = new MainFormViewModel(new SelectionManager());
+            _model.StateChange += Model_StateChange;
+
             _cursors = new Dictionary<SelectionComponentType, Cursor>();
             _cursors.Add(SelectionComponentType.BottomEdge, Cursors.SizeNS);
             _cursors.Add(SelectionComponentType.LeftEdge, Cursors.SizeWE);
@@ -41,10 +42,10 @@ namespace ImageSelector
             _cursors.Add(SelectionComponentType.SECorner, Cursors.SizeNWSE);
             _cursors.Add(SelectionComponentType.SWCorner, Cursors.SizeNESW);
             _cursors.Add(SelectionComponentType.TopEdge, Cursors.SizeNS);
+            _cursors.Add(SelectionComponentType.Inside, Cursors.SizeAll);
 
             // Load image from file in solution folder.
             _image = new ImageInfo(".\\Images\\sample1.jpg");
-            _seeThrough = new ImageInfo(".\\Images\\GreenBox1px.png");
 
             // Display image in form.
             pictureBox.Size = originalSize = _image.Size;
@@ -58,59 +59,45 @@ namespace ImageSelector
             overlayBox.BackColor = Color.Transparent;
             overlayBox.Location = pictureBox.Location;
 
-            // add rectangle the size of overlaybox... for debug only
-            //_selections.Add(new Rectangle(overlayBox.Location, overlayBox.Size));
-            
             cbxSelections.DisplayMember = "Description";
+        }
+
+        private void Model_StateChange(object sender, CustomEventArgs<MainFormStatus> e)
+        {
+            switch (e.Data)
+            {
+                case MainFormStatus.Idle:
+                    Cursor.Current = Cursors.Default;
+                    break;
+                case MainFormStatus.Selecting:
+                    Cursor.Current = Cursors.Default;
+                    break;
+                case MainFormStatus.ResizingSelection:
+                    Cursor.Current = _cursors[_model.ComponentAtCursorPoint.SelectionComponentType];
+                    break;
+                case MainFormStatus.OverEdge:
+                    Cursor.Current = _cursors[_model.ComponentAtCursorPoint.SelectionComponentType];
+                    break;
+                case MainFormStatus.OverSelection:
+                    Cursor.Current = Cursors.Cross;
+                    break;
+                default:
+                    break;
+            }
+
+            _activeCursor = Cursor.Current;
+
+            overlayBox.Invalidate();
         }
 
         private void overlayBox_MouseDown(object sender, MouseEventArgs e)
         {
-            // set starting point for a rectangle.
-            if (e.Button == MouseButtons.Left)
-                _drawing = true;
-            
-            _actionStart = overlayBox.PointToClient(Cursor.Position);
+            _model.MouseDown(overlayBox.PointToClient(Cursor.Position), e.Button);
         }
 
         private void overlayBox_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left && _drawing)
-            {
-                _drawing = false;
-                var actionEnd = overlayBox.PointToClient(Cursor.Position);
-                var r = CreateRectangleFromPoints(_actionStart, actionEnd);
-                overlayBox.CreateGraphics().DrawRectangle(Pens.Red, r);
-
-                if (r.Width > 0 & r.Height > 0)
-                {
-                    Selection s = null;
-                    if (zoomFactor == 0)
-                        s = new Selection (r, 0);
-                    else
-                        s = new Selection(DescaleRectangle(r), 0);
-
-                    _selections.Add(s);
-                    cbxSelections.Items.Add(s);
-                }
-            }
-
-            _temp = null;
-        }
-
-        private Rectangle CreateRectangleFromPoints(Point p1, Point p2)
-        {
-            var result = new Rectangle();
-
-            Point viewerLocation = overlayBox.Location;
-
-            Point topLeft = new Point(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y));
-            Point bottomRight = new Point(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y));
-
-            result.Location = topLeft;
-            result.Size = new Size(bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
-
-            return result;
+        {            
+            _model.MouseUp(overlayBox.PointToClient(Cursor.Position), e.Button);
         }
 
         //private void btnExtract_Click(object sender, EventArgs e)
@@ -140,29 +127,16 @@ namespace ImageSelector
         private void pictureBox_SizeChanged(object sender, EventArgs e)
         {
             overlayBox.Size = pictureBox.Size;
-            //overlayBox.Location = pictureBox.Location;
         }
 
-        private Nullable<Rectangle> _temp;
         private void overlayBox_MouseMove(object sender, MouseEventArgs e)
         {
+            Cursor.Current = _activeCursor;
+
             var actionEnd = overlayBox.PointToClient(Cursor.Position);
 
-            if (_drawing)
-            {
-                overlayBox.Invalidate();
-                
-                _temp = CreateRectangleFromPoints(_actionStart, actionEnd);
-            } 
-            else
-            {
-                foreach (var s in _selections)
-                {
-                    var target = s.GetSelectionAtPoint(actionEnd, 2);
-                    if(target != null)
-                        Cursor.Current = _cursors[target.SelectionComponentType];
-                }                
-            }
+            _model.MouseMove(actionEnd);
+            overlayBox.Invalidate();                            
         }
 
         private void MainForm_Resize(object sender, EventArgs e)
@@ -222,12 +196,12 @@ namespace ImageSelector
             // If there is an image and it has a location, 
             // paint it when the Form is repainted.
             base.OnPaint(e);
-            foreach (var s in _selections)
+            foreach (var s in _model.Selections)
             {
                 // This has to take into account the fact that image can be resized...
                 Rectangle scaledRectagle = ScaleRectangle(s.LocationAndSize);
                 Pen pen = Pens.Red;
-                if (_activeSelection != null && _activeSelection == s)
+                if (_model.ActiveSelection != null && _model.ActiveSelection == s)
                 {
                     pen = new Pen(Brushes.White, 2.0f);
                 }
@@ -235,8 +209,8 @@ namespace ImageSelector
             }
 
             // This is the temp rectangle that is being drawn.
-            if (_temp != null)
-                e.Graphics.DrawRectangle(Pens.Red, _temp.Value);
+            if(_model.ActiveSelection != null)
+                e.Graphics.DrawRectangle(Pens.Red, _model.ActiveSelection.LocationAndSize);
         }
 
         private Rectangle ScaleRectangle(Rectangle r)
@@ -311,7 +285,7 @@ namespace ImageSelector
         private void cbxSelections_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectionProperties.SelectedObject = cbxSelections.SelectedItem;
-            _activeSelection = cbxSelections.SelectedItem as Selection;
+            //_model.ActiveSelection = cbxSelections.SelectedItem as Selection;
             overlayBox.Invalidate();
         }
     }
