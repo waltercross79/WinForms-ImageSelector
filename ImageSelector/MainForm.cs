@@ -19,7 +19,7 @@ namespace ImageSelector
     public partial class MainForm : Form
     {
         ImageInfo _image;
-        int zoomFactor = 0;
+        int _zoomFactor = 0;
         Size originalSize = new Size();
         Dictionary<SelectionComponentType, Cursor> _cursors;
         Cursor _activeCursor = Cursors.Default;
@@ -92,12 +92,14 @@ namespace ImageSelector
 
         private void overlayBox_MouseDown(object sender, MouseEventArgs e)
         {
-            _model.MouseDown(overlayBox.PointToClient(Cursor.Position), e.Button);
+            // Translate coordinates, if image is zoomed in/out.
+            _model.MouseDown(TranslateCursorLocation(), e.Button);
         }
+
 
         private void overlayBox_MouseUp(object sender, MouseEventArgs e)
         {            
-            _model.MouseUp(overlayBox.PointToClient(Cursor.Position), e.Button);
+            _model.MouseUp(TranslateCursorLocation(), e.Button);
         }
 
         //private void btnExtract_Click(object sender, EventArgs e)
@@ -133,9 +135,7 @@ namespace ImageSelector
         {
             Cursor.Current = _activeCursor;
 
-            var actionEnd = overlayBox.PointToClient(Cursor.Position);
-
-            _model.MouseMove(actionEnd);
+            _model.MouseMove(TranslateCursorLocation());
             overlayBox.Invalidate();                            
         }
 
@@ -157,14 +157,14 @@ namespace ImageSelector
 
             Point location = pictureBox.Location;
 
-            if (zoomFactor < 9)
+            if (_zoomFactor < 9)
             {
-                zoomFactor++;
-                pictureBox.Size = new Size((int)(originalSize.Width * (1 + (0.1 * zoomFactor))), (int)(originalSize.Height * (1 + (0.1 * zoomFactor))));
+                _zoomFactor++;
+                pictureBox.Size = new Size((int)(originalSize.Width * (1 + (0.1 * _zoomFactor))), (int)(originalSize.Height * (1 + (0.1 * _zoomFactor))));
             }
 
-            btnZoomOut.Enabled = zoomFactor > -9;
-            btnZoomIn.Enabled = zoomFactor < 9;
+            btnZoomOut.Enabled = _zoomFactor > -9;
+            btnZoomIn.Enabled = _zoomFactor < 9;
 
             pictureBox.Location = location;
 
@@ -177,14 +177,14 @@ namespace ImageSelector
 
             Point location = pictureBox.Location;
 
-            if (zoomFactor > -9)
+            if (_zoomFactor > -9)
             {
-                zoomFactor--;
-                pictureBox.Size = new Size((int)(originalSize.Width * (1 + (0.1 * zoomFactor))), (int)(originalSize.Height * (1 + (0.1 * zoomFactor))));
+                _zoomFactor--;
+                pictureBox.Size = new Size((int)(originalSize.Width * (1 + (0.1 * _zoomFactor))), (int)(originalSize.Height * (1 + (0.1 * _zoomFactor))));
             }
 
-            btnZoomOut.Enabled = zoomFactor > -9;
-            btnZoomIn.Enabled = zoomFactor < 9;
+            btnZoomOut.Enabled = _zoomFactor > -9;
+            btnZoomIn.Enabled = _zoomFactor < 9;
 
             pictureBox.Location = location;
 
@@ -210,36 +210,31 @@ namespace ImageSelector
 
             // This is the temp rectangle that is being drawn.
             if(_model.ActiveSelection != null)
-                e.Graphics.DrawRectangle(Pens.Red, _model.ActiveSelection.LocationAndSize);
+                e.Graphics.DrawRectangle(Pens.Red, ScaleRectangle(_model.ActiveSelection.LocationAndSize));
         }
 
         private Rectangle ScaleRectangle(Rectangle r)
         {
             return new Rectangle(
-                                (int)(r.Location.X * (1 + zoomFactor * (0.1))),
-                                (int)(r.Location.Y * (1 + zoomFactor * (0.1))),
-                                (int)(r.Width * (1 + zoomFactor * (0.1))),
-                                (int)(r.Height * (1 + zoomFactor * (0.1))));
+                                (int)(r.Location.X * (1 + _zoomFactor * (0.1))),
+                                (int)(r.Location.Y * (1 + _zoomFactor * (0.1))),
+                                (int)(r.Width * (1 + _zoomFactor * (0.1))),
+                                (int)(r.Height * (1 + _zoomFactor * (0.1))));
         }
 
         private Rectangle DescaleRectangle(Rectangle r)
         {
             return new Rectangle(
-                                (int)(r.Location.X / (1 + zoomFactor * (0.1))),
-                                (int)(r.Location.Y / (1 + zoomFactor * (0.1))),
-                                (int)(r.Width / (1 + zoomFactor * (0.1))),
-                                (int)(r.Height / (1 + zoomFactor * (0.1))));
+                                (int)(r.Location.X / (1 + _zoomFactor * (0.1))),
+                                (int)(r.Location.Y / (1 + _zoomFactor * (0.1))),
+                                (int)(r.Width / (1 + _zoomFactor * (0.1))),
+                                (int)(r.Height / (1 + _zoomFactor * (0.1))));
         }
 
         private void btnUp_Click(object sender, EventArgs e)
         {
             // Move image up by 5% of its size.
             pictureBox.Top -= pictureBox.Height / 20;
-        }
-
-        private void btnUp_MouseDown(object sender, MouseEventArgs e)
-        {
-
         }
 
         private void btnLeft_Click(object sender, EventArgs e)
@@ -262,21 +257,6 @@ namespace ImageSelector
             pictureBox.Top += pictureBox.Height / 20;
         }
 
-        private void btnDown_MouseDown(object sender, MouseEventArgs e)
-        {
-
-        }
-
-        private void btnRight_MouseDown(object sender, MouseEventArgs e)
-        {
-            // Move image right by 10% of its size.
-        }
-
-        private void btnLeft_MouseDown(object sender, MouseEventArgs e)
-        {
-
-        }
-
         private void cbxSelections_DataSourceChanged(object sender, EventArgs e)
         {
             Debug.WriteLine("Data source changed");
@@ -287,6 +267,14 @@ namespace ImageSelector
             selectionProperties.SelectedObject = cbxSelections.SelectedItem;
             //_model.ActiveSelection = cbxSelections.SelectedItem as Selection;
             overlayBox.Invalidate();
+        }
+
+        private Point TranslateCursorLocation()
+        {
+            Point cursorPosition = overlayBox.PointToClient(Cursor.Position);
+            Point location = new Point((int)(cursorPosition.X / (1 + _zoomFactor * (0.1))),
+                (int)(cursorPosition.Y / (1 + _zoomFactor * (0.1))));
+            return location;
         }
     }
 }
