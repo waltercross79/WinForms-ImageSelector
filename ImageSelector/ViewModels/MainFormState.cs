@@ -94,7 +94,7 @@ namespace ImageSelector.ViewModels
                         if (component == null)
                             return this;
                         else if (component.SelectionComponentType == SelectionComponentType.Inside)
-                            return this;
+                            return new OverSelectionState(_selectionManager, component);
                         else
                         {
                             return new OverEdgeState(_selectionManager, component);
@@ -129,7 +129,8 @@ namespace ImageSelector.ViewModels
             switch (trigger)
             {
                 case StateChangingTrigger.MouseUp:
-                    _selectionManager.AddSelection(_activeSelection);
+                    if(_activeSelection.LeftEdge.Length > _buffer && _activeSelection.TopEdge.Length > _buffer)
+                        _selectionManager.AddSelection(_activeSelection);
                     return new IdleState(_selectionManager, location);
                 case StateChangingTrigger.MouseMove:                    
                     return this;
@@ -164,7 +165,7 @@ namespace ImageSelector.ViewModels
                     else if (activeSelectionComponent.Equals(this.ComponentAtCursorPoint))
                         return this;
                     else if (activeSelectionComponent.SelectionComponentType == SelectionComponentType.Inside)
-                        return new IdleState(_selectionManager, location);
+                        return new OverSelectionState(_selectionManager, activeSelectionComponent);
                     else
                         return new OverEdgeState(_selectionManager, activeSelectionComponent);
                 default:
@@ -351,7 +352,7 @@ namespace ImageSelector.ViewModels
                 case StateChangingTrigger.MouseDown:
                     return this;
                 case StateChangingTrigger.MouseUp:
-                    return new IdleState(_selectionManager, location);
+                    return new OverSelectionState(_selectionManager, _activeSelection.Inside);
                 case StateChangingTrigger.MouseMove:
                     // Calculate the move coordinates from the _actionStartLocation.
                     var offset = new Size(location.X - _actionStartLocation.X, location.Y - _actionStartLocation.Y);
@@ -363,6 +364,40 @@ namespace ImageSelector.ViewModels
             }
 
             throw new NotImplementedException();
+        }
+    }
+
+    class OverSelectionState : MainFormState
+    {
+        public OverSelectionState(ISelectionManager selectionManager, ISelectionComponent interior)
+            : base(selectionManager, interior.Parent)
+        {
+            ComponentAtCursorPoint = interior;
+        }
+
+        public override MainFormStatus Status => MainFormStatus.OverSelection;
+
+        public override MainFormState UpdateState(Point location, StateChangingTrigger trigger)
+        {
+            switch (trigger)
+            {
+                case StateChangingTrigger.MouseDown:
+                    return new MovingSelectionState(_selectionManager,
+                        this.ComponentAtCursorPoint, location);
+                case StateChangingTrigger.MouseMove:
+                    var activeSelectionComponent = _selectionManager
+                        .GetSelectionComponentNearPoint(location, _buffer);
+                    if (activeSelectionComponent == null)
+                        return new IdleState(_selectionManager, location);
+                    else if (activeSelectionComponent.Equals(this.ComponentAtCursorPoint))
+                        return this;
+                    else if (activeSelectionComponent.SelectionComponentType != SelectionComponentType.Inside)
+                        return new OverEdgeState(_selectionManager, activeSelectionComponent);
+                    else
+                        return new OverSelectionState(_selectionManager, activeSelectionComponent);
+                default:
+                    return this;
+            }
         }
     }
 }

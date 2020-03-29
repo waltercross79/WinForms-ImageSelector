@@ -78,5 +78,18 @@ namespace ImageSelector.Core
         {
             return _selections;
         }
+
+        public void Clear()
+        {
+            _selections.Clear();            
+        }
+
+        public void RemoveSelection(Selection selection)
+        {
+            if(selection != null)
+            {
+                _selections.Remove(selection);
+            }
+        }
     }
 }

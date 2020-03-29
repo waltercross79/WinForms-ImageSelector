@@ -28,12 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panelPicture = new System.Windows.Forms.Panel();
             this.pictureBox = new System.Windows.Forms.PictureBox();
             this.imageProperties = new System.Windows.Forms.Panel();
-            this.cbxSelections = new System.Windows.Forms.ComboBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btnExtract = new System.Windows.Forms.Button();
             this.btnRight = new System.Windows.Forms.Button();
             this.btnDown = new System.Windows.Forms.Button();
             this.btnUp = new System.Windows.Forms.Button();
@@ -42,6 +43,9 @@
             this.btnZoomIn = new System.Windows.Forms.Button();
             this.selectionProperties = new System.Windows.Forms.PropertyGrid();
             this.overlayBox = new System.Windows.Forms.PictureBox();
+            this.btnOpen = new System.Windows.Forms.Button();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -51,6 +55,7 @@
             this.imageProperties.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.overlayBox)).BeginInit();
+            this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -95,7 +100,6 @@
             // 
             // imageProperties
             // 
-            this.imageProperties.Controls.Add(this.cbxSelections);
             this.imageProperties.Controls.Add(this.panel1);
             this.imageProperties.Controls.Add(this.selectionProperties);
             this.imageProperties.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -104,21 +108,10 @@
             this.imageProperties.Size = new System.Drawing.Size(487, 699);
             this.imageProperties.TabIndex = 0;
             // 
-            // cbxSelections
-            // 
-            this.cbxSelections.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cbxSelections.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbxSelections.FormattingEnabled = true;
-            this.cbxSelections.Location = new System.Drawing.Point(14, 12);
-            this.cbxSelections.Name = "cbxSelections";
-            this.cbxSelections.Size = new System.Drawing.Size(454, 21);
-            this.cbxSelections.TabIndex = 3;
-            this.cbxSelections.SelectedIndexChanged += new System.EventHandler(this.cbxSelections_SelectedIndexChanged);
-            this.cbxSelections.DataSourceChanged += new System.EventHandler(this.cbxSelections_DataSourceChanged);
-            // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.btnOpen);
+            this.panel1.Controls.Add(this.btnExtract);
             this.panel1.Controls.Add(this.btnRight);
             this.panel1.Controls.Add(this.btnDown);
             this.panel1.Controls.Add(this.btnUp);
@@ -130,6 +123,16 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(487, 229);
             this.panel1.TabIndex = 1;
+            // 
+            // btnExtract
+            // 
+            this.btnExtract.Location = new System.Drawing.Point(395, 171);
+            this.btnExtract.Name = "btnExtract";
+            this.btnExtract.Size = new System.Drawing.Size(75, 23);
+            this.btnExtract.TabIndex = 6;
+            this.btnExtract.Text = "Extract";
+            this.btnExtract.UseVisualStyleBackColor = true;
+            this.btnExtract.Click += new System.EventHandler(this.btnExtract_Click);
             // 
             // btnRight
             // 
@@ -197,9 +200,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.selectionProperties.CanShowVisualStyleGlyphs = false;
-            this.selectionProperties.Location = new System.Drawing.Point(14, 39);
+            this.selectionProperties.Location = new System.Drawing.Point(14, 12);
             this.selectionProperties.Name = "selectionProperties";
-            this.selectionProperties.Size = new System.Drawing.Size(456, 379);
+            this.selectionProperties.Size = new System.Drawing.Size(456, 406);
             this.selectionProperties.TabIndex = 2;
             // 
             // overlayBox
@@ -214,6 +217,30 @@
             this.overlayBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.overlayBox_MouseDown);
             this.overlayBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.overlayBox_MouseMove);
             this.overlayBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.overlayBox_MouseUp);
+            // 
+            // btnOpen
+            // 
+            this.btnOpen.Location = new System.Drawing.Point(395, 141);
+            this.btnOpen.Name = "btnOpen";
+            this.btnOpen.Size = new System.Drawing.Size(75, 23);
+            this.btnOpen.TabIndex = 7;
+            this.btnOpen.Text = "Open...";
+            this.btnOpen.UseVisualStyleBackColor = true;
+            this.btnOpen.Click += new System.EventHandler(this.btnOpen_Click);
+            // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.deleteToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 48);
+            // 
+            // deleteToolStripMenuItem
+            // 
+            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.deleteToolStripMenuItem.Text = "Delete";
+            this.deleteToolStripMenuItem.Click += DeleteToolStripMenuItem_Click;
             // 
             // MainForm
             // 
@@ -235,6 +262,7 @@
             this.imageProperties.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.overlayBox)).EndInit();
+            this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -255,8 +283,11 @@
         private System.Windows.Forms.Button btnDown;
         private System.Windows.Forms.Button btnUp;
         private System.Windows.Forms.Button btnLeft;
-        private System.Windows.Forms.ComboBox cbxSelections;
         private System.Windows.Forms.PropertyGrid selectionProperties;
+        private System.Windows.Forms.Button btnExtract;
+        private System.Windows.Forms.Button btnOpen;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
     }
 }
 

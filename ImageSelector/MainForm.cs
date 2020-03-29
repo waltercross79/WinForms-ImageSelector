@@ -42,24 +42,23 @@ namespace ImageSelector
             _cursors.Add(SelectionComponentType.SECorner, Cursors.SizeNWSE);
             _cursors.Add(SelectionComponentType.SWCorner, Cursors.SizeNESW);
             _cursors.Add(SelectionComponentType.TopEdge, Cursors.SizeNS);
-            _cursors.Add(SelectionComponentType.Inside, Cursors.SizeAll);
+            _cursors.Add(SelectionComponentType.Inside, Cursors.SizeAll);            
+        }
 
+        private void InitViewer(ImageInfo imageInfo)
+        {
             // Load image from file in solution folder.
-            _image = new ImageInfo(".\\Images\\sample1.jpg");
-
-            // Display image in form.
+            _image = imageInfo;
+            
             pictureBox.Size = originalSize = _image.Size;
             pictureBox.Location = new Point(0, 0);
             pictureBox.Image = _image.Image;
             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
-
-            // Hook up events in viewer.
+            
             overlayBox.SizeMode = PictureBoxSizeMode.Zoom;
             overlayBox.Parent = pictureBox;
             overlayBox.BackColor = Color.Transparent;
             overlayBox.Location = pictureBox.Location;
-
-            cbxSelections.DisplayMember = "Description";
         }
 
         private void Model_StateChange(object sender, CustomEventArgs<MainFormStatus> e)
@@ -73,13 +72,9 @@ namespace ImageSelector
                     Cursor.Current = Cursors.Default;
                     break;
                 case MainFormStatus.ResizingSelection:
-                    Cursor.Current = _cursors[_model.ComponentAtCursorPoint.SelectionComponentType];
-                    break;
                 case MainFormStatus.OverEdge:
-                    Cursor.Current = _cursors[_model.ComponentAtCursorPoint.SelectionComponentType];
-                    break;
                 case MainFormStatus.OverSelection:
-                    Cursor.Current = Cursors.Cross;
+                    Cursor.Current = _cursors[_model.ComponentAtCursorPoint.SelectionComponentType];
                     break;
                 default:
                     break;
@@ -87,11 +82,21 @@ namespace ImageSelector
 
             _activeCursor = Cursor.Current;
 
+            // Show active selection in the property grid.
+            selectionProperties.SelectedObject = _model.ActiveSelection;
+
             overlayBox.Invalidate();
         }
 
         private void overlayBox_MouseDown(object sender, MouseEventArgs e)
         {
+            // If active selection not null and right button clicked - show context menu.
+            if (e.Button == MouseButtons.Right && _model.ActiveSelection != null)
+            {
+                // Show context menu.
+                contextMenuStrip1.Show(Cursor.Position);
+            }
+            
             // Translate coordinates, if image is zoomed in/out.
             _model.MouseDown(TranslateCursorLocation(), e.Button);
         }
@@ -101,26 +106,7 @@ namespace ImageSelector
         {            
             _model.MouseUp(TranslateCursorLocation(), e.Button);
         }
-
-        //private void btnExtract_Click(object sender, EventArgs e)
-        //{            
-        //    // Show modal windows to collect tags.
-        //    using (Tags t = new Tags())
-        //    {
-        //        t.Save += Tags_Save;
-        //        t.ShowDialog(this);
-        //    }            
-        //}
-
-        //private void Tags_Save(object sender, Infrastructure.CustomEventArgs<string> e)
-        //{
-        //    // Clone section of the original image in given location/rectangle.
-        //    Bitmap selected = _image.Image.Clone(_selection, _image.Image.PixelFormat);
-
-        //    // Save copy of the section to a new file.            
-        //    selected.Save(".\\Images\\selection.jpg", ImageFormat.Jpeg);
-        //}
-
+        
         private void PictureBox_LocationChanged(object sender, System.EventArgs e)
         {            
             //overlayBox.Location = pictureBox.Location;            
@@ -257,24 +243,57 @@ namespace ImageSelector
             pictureBox.Top += pictureBox.Height / 20;
         }
 
-        private void cbxSelections_DataSourceChanged(object sender, EventArgs e)
-        {
-            Debug.WriteLine("Data source changed");
-        }
-
-        private void cbxSelections_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            selectionProperties.SelectedObject = cbxSelections.SelectedItem;
-            //_model.ActiveSelection = cbxSelections.SelectedItem as Selection;
-            overlayBox.Invalidate();
-        }
-
         private Point TranslateCursorLocation()
         {
             Point cursorPosition = overlayBox.PointToClient(Cursor.Position);
             Point location = new Point((int)(cursorPosition.X / (1 + _zoomFactor * (0.1))),
                 (int)(cursorPosition.Y / (1 + _zoomFactor * (0.1))));
             return location;
+        }
+
+        private void btnExtract_Click(object sender, EventArgs e)
+        {
+            // Show the tag screen.
+            // Collect the text.
+            // Cut images from master and save as individual files with naming convention:
+            // {Batch_Guid}_{tag}_{seq-no}.jpg
+            // Show modal windows to collect tags.
+            using (Tags t = new Tags())
+            {
+                t.Save += Tags_Save;
+                t.ShowDialog(this);
+            }
+        }
+
+        private void Tags_Save(object sender, Infrastructure.CustomEventArgs<string> e)
+        {
+            _model.ExtractImagesWithTag(e.Data);            
+        }
+
+        private void btnOpen_Click(object sender, EventArgs e)
+        {
+            // Open FileOpenDialog - filter for jpg.
+            // On close - delegate to the view model to load the image.
+            OpenFileDialog d = new OpenFileDialog();
+            d.Filter = "JPEG images|*.jpg";
+            d.FileOk += OpenFileDialog_FileOk;
+            d.ShowDialog();            
+        }
+
+        private void OpenFileDialog_FileOk(object sender, CancelEventArgs e)
+        {
+            OpenFileDialog d = sender as OpenFileDialog;
+
+            if (d == null)
+                return;
+
+            InitViewer(_model.LoadImage(d.FileName));
+        }
+
+        private void DeleteToolStripMenuItem_Click(object sender, System.EventArgs e)
+        {
+            _model.DeleteActiveSelection();
+            
         }
     }
 }

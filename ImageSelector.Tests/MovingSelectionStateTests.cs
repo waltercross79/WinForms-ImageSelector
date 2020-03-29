@@ -66,10 +66,10 @@ namespace ImageSelector.Tests
         }
 
         [TestMethod]
-        public void test_OnMouseUpReturnsIdleState()
+        public void test_OnMouseUpReturnOverSelectionState()
         {
             var state = _state.UpdateState(new Point(5, 5), StateChangingTrigger.MouseUp);
-            Assert.AreEqual(MainFormStatus.Idle, state.Status);
+            Assert.AreEqual(MainFormStatus.OverSelection, state.Status);
         }
 
         [TestMethod]

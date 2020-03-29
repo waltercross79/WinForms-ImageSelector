@@ -9,5 +9,6 @@ namespace ImageSelector
     public class Constants
     {
         public const string BufferAppSetting = "SelectionBuffer";
+        public const string ExportLocationAppSetting = "ExportLocation";
     }
 }

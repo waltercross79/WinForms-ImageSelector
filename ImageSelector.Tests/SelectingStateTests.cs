@@ -29,7 +29,7 @@ namespace ImageSelector.Tests
         public void Initialize()
         {
             _location = new Point(1, 1);
-            _location2 = new Point(2, 2);
+            _location2 = new Point(5, 5);
             _selectionManager = new Mock<ISelectionManager>();
             _selectionManager
                 .Setup(m => m
@@ -89,7 +89,7 @@ namespace ImageSelector.Tests
         [TestMethod]
         public void test_AddsNewSelectionToManagerOnMOuseUp()
         {
-            var s = new Selection(new Rectangle(_location, new Size(1, 1)), 1);
+            var s = new Selection(new Rectangle(_location, new Size(4, 4)), 1);
 
             _selectionManager.Setup(x => x.CreateSelection(
                 It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
@@ -99,6 +99,21 @@ namespace ImageSelector.Tests
             var result = _state.UpdateState(_location2, StateChangingTrigger.MouseUp);
 
             _selectionManager.Verify(x => x.AddSelection(s));
+        }
+
+        [TestMethod]
+        public void test_DoesNotAddsNewSelectionIfAnyDimensionSmallerThanBuffer()
+        {
+            var s = new Selection(new Rectangle(_location, new Size(_buffer - 1, 4)), 1);
+
+            _selectionManager.Setup(x => x.CreateSelection(
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(s);
+            _selectionManager.Setup(x => x.AddSelection(It.IsAny<Selection>()));
+
+            var result = _state.UpdateState(_location2, StateChangingTrigger.MouseUp);
+
+            _selectionManager.Verify(x => x.AddSelection(It.IsAny<Selection>()), Times.Never());
         }
 
         [TestMethod]

@@ -125,7 +125,7 @@ namespace ImageSelector.Tests
         }
 
         [TestMethod]        
-        public void test_OnMouseOverReturnsIdleSelectionWhenInsideSelection()
+        public void test_OnMouseOverReturnsOverSelectionWhenInsideSelection()
         {
             Point location = new Point(5, 5);
             _selectionManager
@@ -135,7 +135,7 @@ namespace ImageSelector.Tests
 
             var state = _state.UpdateState(location, StateChangingTrigger.MouseMove);
 
-            Assert.AreEqual(MainFormStatus.Idle, state.Status);
+            Assert.AreEqual(MainFormStatus.OverSelection, state.Status);
         }
     }
 }
